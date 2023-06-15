@@ -5,7 +5,7 @@ VisualStudioVersion = 17.5.33424.131
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ApiMusic", "ApiMusic\ApiMusic.csproj", "{F1635719-67C5-4543-856B-CB423520A4C6}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Infrastructure", "Infraestructure\Infrastructure.csproj", "{E7472F7C-A774-41A9-814C-EECD3F7FC77C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Infraestructure", "Infraestructure\Infraestructure.csproj", "{E7472F7C-A774-41A9-814C-EECD3F7FC77C}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Commons", "Commons\Commons.csproj", "{F2E35FFC-9C82-4562-A1D9-FA67658B1B5D}"
 EndProject

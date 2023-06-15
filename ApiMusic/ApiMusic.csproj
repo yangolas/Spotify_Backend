@@ -30,7 +30,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Commons\Commons.csproj" />
-    <ProjectReference Include="..\Infraestructure\Infrastructure.csproj" />
+    <ProjectReference Include="..\Infraestructure\Infraestructure.csproj" />
     <ProjectReference Include="..\RabbitMQ\RabbitMQ.csproj" />
   </ItemGroup>
 
