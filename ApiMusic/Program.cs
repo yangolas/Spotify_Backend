@@ -10,8 +10,31 @@ using Microsoft.EntityFrameworkCore;
 using RabbitMQ.Core.Contracts;
 using RabbitMQ.Infrastructure.Bus;
 using RabbitMQ.Infrastructure.Ioc;
+using System.Security.Cryptography.X509Certificates;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var configuration = new ConfigurationBuilder()
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json")
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)
+    .Build();
+
+if (builder.Environment.EnvironmentName == "Docker")
+{
+    var certificate = new X509Certificate2(
+        builder.Configuration["SSL:PathCert"], 
+        builder.Configuration["SSL:Password"]
+    );
+    builder.WebHost.ConfigureKestrel(options =>
+    {
+        options.ListenAnyIP(7252, listenOptions =>
+        {
+            listenOptions.UseHttps(certificate);
+        });
+    });
+}
+
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -26,7 +49,7 @@ builder.Services.AddTransient<IRequestHandler<UploadSongCommand, bool>, UploadSo
 
 builder.Services.AddDbContext<MusicContext>(options => 
     options.UseSqlServer(
-        builder.Configuration["ConnectionStrings:DBContextLocal"],
+        builder.Configuration["ConnectionStrings:DBContext"],
         build => build.MigrationsAssembly("ApiMusic")
     )
 );
@@ -40,6 +63,12 @@ builder.Services.AddTransient<IEventHandler<UploadImageEvent>, UploadImageEventH
 builder.Services.AddTransient<IEventHandler<UploadSongEvent>, UploadSongEventHandler>();
 builder.Services.AddTransient<UploadImageEventHandler>();
 builder.Services.AddTransient<UploadSongEventHandler>();
+builder.Services.AddHttpsRedirection(options =>
+{
+    options.HttpsPort = 443; // Configura aquí el puerto HTTPS correcto
+});
+
+
 
 builder.Services.AddCors(options =>
 {
@@ -55,10 +84,12 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+
+
 //Consumer Bus Rabbit
-var eventBus = app.Services.GetRequiredService<IEventBus>();
-eventBus.Subscribe<UploadImageEvent, UploadImageEventHandler>();
-eventBus.Subscribe<UploadSongEvent, UploadSongEventHandler>();
+//var eventBus = app.Services.GetRequiredService<IEventBus>();
+//eventBus.Subscribe<UploadImageEvent, UploadImageEventHandler>();
+//eventBus.Subscribe<UploadSongEvent, UploadSongEventHandler>();
 
 app.UseCors();
 
