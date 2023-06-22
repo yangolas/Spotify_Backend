@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using ApiMusic.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Swashbuckle.AspNetCore.Annotations;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -9,11 +11,16 @@ namespace ApiMusic.Controllers
     [ApiController]
     public class MediaPlayerController : ControllerBase
     {
-        //public MediaPlayerController(IMemoryMediaPlayer memoryMediaPlayer)
-        //{
-        //    _memoryMediaPlayer = memoryMediaPlayer;
-        //}
-        // GET: api/<MediaPlayerController>
+        private readonly UploadSettings _uploadSettings;
+        private readonly IWebHostEnvironment _enviroment;
+
+        public MediaPlayerController(
+            IOptions<UploadSettings> uploadSettings,
+            IWebHostEnvironment environment)
+        {
+            _uploadSettings = uploadSettings.Value;
+            _enviroment = environment;
+        }
         [HttpGet]
         public IEnumerable<string> Get()
         {
@@ -26,12 +33,12 @@ namespace ApiMusic.Controllers
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FileStreamResult))]
         public async Task<FileStreamResult> Get(string name)
         {
-            string sFile = Path.Combine(
-                AppDomain.CurrentDomain.BaseDirectory,
-                $"..\\..\\..\\Assets\\tracks\\{name}"
-            );
 
-            //_memoryMediaPlayer 
+            string sFile = Path.Combine(
+                _enviroment.ContentRootPath,
+                _uploadSettings.PathSongs,
+                name
+            );
 
             FileStream track = System.IO.File.OpenRead(sFile);
 

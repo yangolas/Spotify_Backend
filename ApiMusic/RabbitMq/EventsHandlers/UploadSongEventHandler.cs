@@ -8,23 +8,24 @@ namespace ApiMusic.RabbitMq.EventsHandlers;
 public class UploadSongEventHandler : IEventHandler<UploadSongEvent>
 {
     private readonly UploadSettings _uploadSettings;
+    private readonly IWebHostEnvironment _environment;
 
-    public UploadSongEventHandler(IOptions<UploadSettings> uploadSettings)
+    public UploadSongEventHandler(
+        IOptions<UploadSettings> uploadSettings,
+        IWebHostEnvironment environment
+        )
     {
         _uploadSettings = uploadSettings.Value;
+        _environment = environment;
     }
 
     public Task Handle(UploadSongEvent @event)
     {
         byte[] songBytes = Convert.FromBase64String(@event.Song);
 
-        string folderPath = Path.Combine(
-            AppDomain.CurrentDomain.BaseDirectory,
-            _uploadSettings.PathSongs
-        );
-
         string filePath = Path.Combine(
-            folderPath, 
+            _environment.ContentRootPath,
+            _uploadSettings.PathSongs,
             @event.Name
         );
 

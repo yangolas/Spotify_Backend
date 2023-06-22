@@ -16,18 +16,22 @@ RUN dotnet publish "ApiMusic.csproj" -c Release -o /app/publish /p:UseAppHost=fa
 FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-COPY openssl.cnf /app/openssl.cnf
+COPY ssl/cert.pfx /app/cert.pfx
 
-RUN apt-get update && apt-get install -y openssl
+COPY ApiMusic/Assets /app/Assets
 
-RUN openssl req -new -newkey rsa:2048 -days 365 -nodes -x509 \
-    -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost" \
-    -keyout /app/cert.key -out /app/cert.crt \
-    -config /app/openssl.cnf
+# COPY openssl.cnf /app/openssl.cnf
 
-RUN openssl pkcs12 -export -out /app/cert.pfx -inkey /app/cert.key -in /app/cert.crt -password pass:spotify
+# RUN apt-get update && apt-get install -y openssl
 
-RUN rm /app/cert.crt /app/cert.key
+# RUN openssl req -new -newkey rsa:2048 -days 365 -nodes -x509 \
+#     -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost" \
+#     -keyout /app/cert.key -out /app/cert.crt \
+#     -config /app/openssl.cnf
+
+# RUN openssl pkcs12 -export -out /app/cert.pfx -inkey /app/cert.key -in /app/cert.crt -password pass:spotify
+
+# RUN rm /app/cert.crt /app/cert.key
 
 # Establecer la variable de entorno ASPNETCORE_ENVIRONMENT
 ENV ASPNETCORE_ENVIRONMENT=Docker

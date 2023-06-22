@@ -2,30 +2,32 @@
 using ApiMusic.RabbitMq.Events;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Core.Contracts;
+using System;
 
 namespace ApiMusic.RabbitMq.EventsHandlers
 {
     public class UploadImageEventHandler : IEventHandler<UploadImageEvent>
     {
         private readonly UploadSettings _uploadSettings;
+        private readonly IWebHostEnvironment _environment;
 
-        public UploadImageEventHandler(IOptions<UploadSettings> uploadSettings)
+        public UploadImageEventHandler(
+            IOptions<UploadSettings> uploadSettings,
+            IWebHostEnvironment environment
+            )
         {
             _uploadSettings = uploadSettings.Value;
+            _environment = environment;
         }
 
         public Task Handle(UploadImageEvent @event)
         {
             byte[] imageByte = Convert.FromBase64String(@event.Image);
 
-            string folderPath = Path.Combine(
-                AppDomain.CurrentDomain.BaseDirectory,
-                _uploadSettings.PathImages
-            );
-
             string filePath = Path.Combine(
-                folderPath,
-                @event.Name
+             _environment.ContentRootPath,
+             _uploadSettings.PathImages,
+             @event.Name
             );
 
             File.WriteAllBytes(

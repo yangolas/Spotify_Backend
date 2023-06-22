@@ -587,7 +587,7 @@ public class CardService : ICardService
                 image,
                 card.Img)
             );
-            card.Img = $"{_endPointImg}{image}";
+            card.Img = image;
         }
 
         IEnumerable<Card> cardsSong = cards

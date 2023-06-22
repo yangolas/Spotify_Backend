@@ -1,5 +1,6 @@
 ﻿using ApiMusic.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using Swashbuckle.AspNetCore.Annotations;
@@ -14,6 +15,16 @@ namespace ApiMusic.Controllers
     [ApiController]
     public class SongController : ControllerBase
     {
+        private readonly UploadSettings _uploadSettings;
+        private readonly IWebHostEnvironment _enviroment;
+
+        public SongController(
+            IOptions<UploadSettings> uploadSettings,
+            IWebHostEnvironment environment)
+        {
+            _uploadSettings = uploadSettings.Value;
+            _enviroment = environment;
+        }
         // GET: api/<SongController>
         [HttpGet]
         public IEnumerable<string> Get()
@@ -42,11 +53,11 @@ namespace ApiMusic.Controllers
                     Convert.FromBase64String(card.Song);
                     byte[] songBytes = Convert.FromBase64String(card.Song);
                     card.Song = uniqueFileName;
-                    string folderPath = Path.Combine(
-                        AppDomain.CurrentDomain.BaseDirectory,
-                        $"..\\..\\..\\Assets\\tracks"
-                     ); 
-                    string filePath = Path.Combine(folderPath, uniqueFileName);
+                    string filePath = Path.Combine(
+                        _enviroment.ContentRootPath,
+                        _uploadSettings.PathSongs,
+                        uniqueFileName
+                    );
                     await Task.Run(() => System.IO.File.WriteAllBytes(filePath, songBytes));
                 }
             }

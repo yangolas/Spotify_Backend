@@ -5,10 +5,10 @@
       "launchBrowser": true,
       "launchUrl": "swagger",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Docker"
+        "ASPNETCORE_ENVIRONMENT": "Development"
       },
       "dotnetRunMessages": true,
-      "applicationUrl": "https://localhost:7250;http://localhost:5014",
+      "applicationUrl": "https://localhost:8250;http://localhost:5014",
       "hotReloadEnabled": true
     },
     "IIS Express": {

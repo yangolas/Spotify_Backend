@@ -7,6 +7,9 @@ using ApiMusic.Service;
 using Infrastructure.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using RabbitMQ.Core.Contracts;
 using RabbitMQ.Infrastructure.Bus;
 using RabbitMQ.Infrastructure.Ioc;
@@ -14,7 +17,8 @@ using System.Security.Cryptography.X509Certificates;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var configuration = new ConfigurationBuilder()
+
+builder.Configuration
     .SetBasePath(Directory.GetCurrentDirectory())
     .AddJsonFile("appsettings.json")
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)
@@ -63,10 +67,10 @@ builder.Services.AddTransient<IEventHandler<UploadImageEvent>, UploadImageEventH
 builder.Services.AddTransient<IEventHandler<UploadSongEvent>, UploadSongEventHandler>();
 builder.Services.AddTransient<UploadImageEventHandler>();
 builder.Services.AddTransient<UploadSongEventHandler>();
-builder.Services.AddHttpsRedirection(options =>
-{
-    options.HttpsPort = 443; // Configura aquí el puerto HTTPS correcto
-});
+//builder.Services.AddHttpsRedirection(options =>
+//{
+//    options.HttpsPort = 443; // Configura aquí el puerto HTTPS correcto
+//});
 
 
 
@@ -84,12 +88,15 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+var environment = app.Services.GetRequiredService<IHostEnvironment>();
+var assets = app.Services.GetRequiredService<IOptions<UploadSettings>>().Value;
+
 
 
 //Consumer Bus Rabbit
-//var eventBus = app.Services.GetRequiredService<IEventBus>();
-//eventBus.Subscribe<UploadImageEvent, UploadImageEventHandler>();
-//eventBus.Subscribe<UploadSongEvent, UploadSongEventHandler>();
+var eventBus = app.Services.GetRequiredService<IEventBus>();
+eventBus.Subscribe<UploadImageEvent, UploadImageEventHandler>();
+eventBus.Subscribe<UploadSongEvent, UploadSongEventHandler>();
 
 app.UseCors();
 
@@ -102,7 +109,12 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(
+                Path.Combine(environment.ContentRootPath, assets.Asset)),
+    RequestPath = $"/{ assets.Asset }"
+});
 
 app.UseAuthorization();
 app.MapControllers();
