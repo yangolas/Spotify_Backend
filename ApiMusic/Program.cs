@@ -24,7 +24,8 @@ builder.Configuration
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)
     .Build();
 
-if (builder.Environment.EnvironmentName == "Docker")
+if (builder.Environment.EnvironmentName == "Docker"
+    || builder.Environment.EnvironmentName == "Azure")
 {
     var certificate = new X509Certificate2(
         builder.Configuration["SSL:PathCert"], 
@@ -39,6 +40,13 @@ if (builder.Environment.EnvironmentName == "Docker")
     });
 }
 
+//if (builder.Environment.EnvironmentName == "Azure")
+//{
+//    builder.WebHost.ConfigureKestrel(options =>
+//    {
+//        options.ListenAnyIP(7252);
+//    });
+//}
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -91,8 +99,6 @@ var app = builder.Build();
 var environment = app.Services.GetRequiredService<IHostEnvironment>();
 var assets = app.Services.GetRequiredService<IOptions<UploadSettings>>().Value;
 
-
-
 //Consumer Bus Rabbit
 var eventBus = app.Services.GetRequiredService<IEventBus>();
 eventBus.Subscribe<UploadImageEvent, UploadImageEventHandler>();
@@ -106,8 +112,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
-app.UseHttpsRedirection();
+//if (builder.Environment.EnvironmentName != "Azure")
+//{
+    app.UseHttpsRedirection();
+//}
 
 app.UseStaticFiles(new StaticFileOptions
 {

@@ -6,6 +6,7 @@ using RabbitMQ.Client.Events;
 using RabbitMQ.Core.Commands;
 using RabbitMQ.Core.Contracts;
 using RabbitMQ.Core.Events;
+using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 
@@ -32,6 +33,7 @@ public class RabbitMQBus : IEventBus
 
     public void Publish<TEvent>(TEvent @event) where TEvent : Event
     {
+        Console.Write("Hellow, publisher");
         ConnectionFactory connectionFactory = new()
         {
             HostName = _rabbitMQSettings.Hostname,
@@ -39,28 +41,34 @@ public class RabbitMQBus : IEventBus
             Password = _rabbitMQSettings.Password,
             Port = _rabbitMQSettings.Port,
         };
-
-        using (var connection = connectionFactory.CreateConnection())
-        using (var channel = connection.CreateModel()) 
+        try
         {
-            string queueName = @event.GetType().Name;
+            using (var connection = connectionFactory.CreateConnection())
+            using (var channel = connection.CreateModel())
+            {
+                string queueName = @event.GetType().Name;
 
-            channel.QueueDeclare(
-                queueName,
-                false,
-                false,
-                false,
-                null
-            );
-            string message = JsonSerializer.Serialize(@event);
-            byte[] body = Encoding.UTF8.GetBytes(message);
+                channel.QueueDeclare(
+                    queueName,
+                    false,
+                    false,
+                    false,
+                    null
+                );
 
-            channel.BasicPublish(
-                "",
-                queueName,
-                null,
-                body
-            );
+                string message = JsonSerializer.Serialize(@event);
+                byte[] body = Encoding.UTF8.GetBytes(message);
+
+                channel.BasicPublish(
+                    "",
+                    queueName,
+                    null,
+                    body
+                );
+            }
+        }
+        catch (Exception ex) { 
+            Console.WriteLine(ex.Message);
         }
     }
 
@@ -73,34 +81,40 @@ public class RabbitMQBus : IEventBus
         where TEvent : Event
         where TEventHandlerType : IEventHandler<TEvent>
     {
-        var eventName = typeof(TEvent).Name;
-        var handlerType = typeof(TEventHandlerType);
-
-        if (!_eventTypes.Contains(typeof(TEvent)))
+        try 
         {
-            _eventTypes.Add(typeof(TEvent));
+            var eventName = typeof(TEvent).Name;
+            var handlerType = typeof(TEventHandlerType);
+
+            if (!_eventTypes.Contains(typeof(TEvent)))
+            {
+                _eventTypes.Add(typeof(TEvent));
+            }
+
+            if (!_handlers.ContainsKey(eventName))
+            {
+                _handlers.Add(eventName, new List<Type>());
+            }
+
+            if (_handlers[eventName].Any(s => s.GetType() == handlerType))
+            {
+                Console.WriteLine($"Subscriber ==> El handler exception {handlerType.Name} ya fue registrado anteriormente por '{eventName}, {nameof(handlerType)}");
+            }
+            _handlers[eventName].Add(handlerType);
+
+            Consume<TEvent>();
         }
-
-        if (!_handlers.ContainsKey(eventName))
-        {
-            _handlers.Add(eventName, new List<Type>());
+        catch (Exception ex) 
+        { 
+            Console.WriteLine($"Subscriber Error: {ex.Message}");
         }
-
-        if (_handlers[eventName].Any(s => s.GetType() == handlerType))
-        {
-            throw new ArgumentException($"El handler exception {handlerType.Name} ya fue registrado anteriormente por '{eventName}'", nameof(handlerType));
-        }
-
-        _handlers[eventName].Add(handlerType);
-
-        Consume<TEvent>();
+        
     }
 
     private void Consume<TEvent>() where TEvent : Event
     {
         try
         {
-
             ConnectionFactory connectionFactory = new()
             {
                 HostName = _rabbitMQSettings.Hostname,
@@ -112,9 +126,11 @@ public class RabbitMQBus : IEventBus
 
             string queueName = typeof(TEvent).Name;
 
+            WaitForRabbitMQContainer();
             var connection = connectionFactory.CreateConnection();
+
             var channel = connection.CreateModel();
-            
+
             channel.QueueDeclare(
                 queueName,
                 false,
@@ -128,11 +144,30 @@ public class RabbitMQBus : IEventBus
             consumer.Received += OnReceived;
 
             channel.BasicConsume(queueName, true, consumer);
-            
+
         }
         catch (Exception ex) 
         {
-            var message = ex.Message;
+            Console.WriteLine($"{ex.Message}");
+        }
+    }
+
+    private void WaitForRabbitMQContainer()
+    {
+        bool rabbitMQReady = false;
+        while (!rabbitMQReady)
+        {
+            try
+            {
+                using (var tcpClient = new TcpClient(_rabbitMQSettings.Hostname, _rabbitMQSettings.Port))
+                {
+                    rabbitMQReady = true;
+                }
+            }
+            catch (SocketException)
+            {
+                Thread.Sleep(1000); 
+            }
         }
     }
 
@@ -147,7 +182,7 @@ public class RabbitMQBus : IEventBus
         }
         catch (Exception ex)
         {
-
+            Console.WriteLine($"Error => {ex.Message}");
         }
     }
 
